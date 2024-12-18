@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Merry Christmas!</title>
+    <!-- Link to Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
     <style>
         /* Body with blue gradient background */
         body {
@@ -14,16 +16,16 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
             color: gold;
             text-align: center;
             position: relative;
         }
 
-        /* Golden "Merry Christmas" text with glow effect */
+        /* Old-timey text */
         h1 {
+            font-family: 'Old Standard TT', serif; /* Classic serif font */
             font-size: 4rem;
-            text-shadow: 0 0 10px rgba(255, 223, 0, 0.8), 
+            text-shadow: 0 0 10px rgba(255, 223, 0, 0.8),
                          0 0 20px rgba(255, 223, 0, 0.6),
                          0 0 30px rgba(255, 223, 0, 0.4);
             animation: sparkle 2s infinite alternate;
@@ -43,26 +45,14 @@
             }
         }
 
-        /* Falling snow effect */
-        .snowflake {
-            position: absolute;
-            top: -10px;
-            color: white;
-            font-size: 1rem;
-            user-select: none;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            to {
-                transform: translateY(100vh);
-            }
+        /* Optional: Add a fancier Old English style */
+        .old-english {
+            font-family: 'UnifrakturMaguntia', cursive; /* More gothic Old English */
         }
     </style>
 </head>
 <body>
-    <h1>Merry Christmas to All!!</h1>
+    <h1 class="old-english">Merry Christmas to All!!</h1>
     <script>
         // Snowflake generator
         const snowflakes = 50; // Number of snowflakes
