@@ -3,23 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coming Soon</title>
+    <title>Merry Christmas!</title>
     <style>
+        /* Body with blue gradient background */
         body {
-            text-align: center;
-            font-family: Arial, sans-serif;
             margin: 0;
-            background-color: #f4f4f4;
-            color: #333;
+            height: 100vh;
+            background: linear-gradient(to bottom, #4a69bd, #82ccdd);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: gold;
+            text-align: center;
+            position: relative;
         }
+
+        /* Golden "Merry Christmas" text with glow effect */
         h1 {
-            margin-top: 20%;
-            font-size: 3em;
+            font-size: 4rem;
+            text-shadow: 0 0 10px rgba(255, 223, 0, 0.8), 
+                         0 0 20px rgba(255, 223, 0, 0.6),
+                         0 0 30px rgba(255, 223, 0, 0.4);
+            animation: sparkle 2s infinite alternate;
+            margin: 0;
+        }
+
+        @keyframes sparkle {
+            0% {
+                text-shadow: 0 0 10px rgba(255, 223, 0, 0.8),
+                             0 0 20px rgba(255, 223, 0, 0.6),
+                             0 0 30px rgba(255, 223, 0, 0.4);
+            }
+            100% {
+                text-shadow: 0 0 15px rgba(255, 223, 0, 1),
+                             0 0 25px rgba(255, 223, 0, 0.8),
+                             0 0 35px rgba(255, 223, 0, 0.6);
+            }
+        }
+
+        /* Falling snow effect */
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: white;
+            font-size: 1rem;
+            user-select: none;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Coming Soon</h1>
-    <p>sbanders.com is under construction. Stay tuned!</p>
+    <h1>Merry Christmas to All!!</h1>
+    <script>
+        // Snowflake generator
+        const snowflakes = 50; // Number of snowflakes
+        const body = document.body;
+
+        for (let i = 0; i < snowflakes; i++) {
+            const snowflake = document.createElement("div");
+            snowflake.classList.add("snowflake");
+            snowflake.innerHTML = "❆"; // Snowflake character
+            snowflake.style.left = Math.random() * 100 + "vw";
+            snowflake.style.animationDuration = Math.random() * 5 + 5 + "s"; // Between 5s and 10s
+            snowflake.style.fontSize = Math.random() * 1 + 1 + "rem"; // Between 1rem and 2rem
+            snowflake.style.opacity = Math.random() * 0.8 + 0.2; // Opacity between 0.2 and 1
+            body.appendChild(snowflake);
+        }
+    </script>
 </body>
 </html>
