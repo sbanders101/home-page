@@ -34,12 +34,10 @@
         }
 
         /* Safari-specific adjustments */
-        @media not all and (min-resolution: 0.001dpcm) {
-            @supports (-webkit-appearance: none) {
-                h1 {
-                    text-shadow: 0 0 5px rgba(255, 223, 0, 0.6),
-                                 0 0 10px rgba(255, 223, 0, 0.4);
-                }
+        @supports (-webkit-touch-callout: none) {
+            h1 {
+                text-shadow: 0 0 5px rgba(255, 223, 0, 0.6) !important,
+                             0 0 10px rgba(255, 223, 0, 0.4) !important;
             }
         }
 
@@ -71,10 +69,12 @@
             pointer-events: none;
             animation: fall linear infinite;
         }
+
         @keyframes fall {
             to {
                 transform: translateY(100vh);
             }
+        }
     </style>
 </head>
 <body>
