@@ -25,11 +25,22 @@
         h1 {
             font-family: 'Old Standard TT', serif; /* Classic serif font */
             font-size: 4rem;
+            color: gold;
             text-shadow: 0 0 10px rgba(255, 223, 0, 0.8),
                          0 0 20px rgba(255, 223, 0, 0.6),
                          0 0 30px rgba(255, 223, 0, 0.4);
             animation: sparkle 2s infinite alternate;
             margin: 0;
+        }
+
+        /* Safari-specific adjustments */
+        @media not all and (min-resolution: 0.001dpcm) {
+            @supports (-webkit-appearance: none) {
+                h1 {
+                    text-shadow: 0 0 5px rgba(255, 223, 0, 0.6),
+                                 0 0 10px rgba(255, 223, 0, 0.4);
+                }
+            }
         }
 
         @keyframes sparkle {
