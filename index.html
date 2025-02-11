@@ -61,22 +61,6 @@
   
   <div id="timeDisplay"></div>
 
-  <div id="simControls" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; z-index:3;">
-    <label>
-      Date:
-      <input type="date" id="simDate">
-    </label>
-    <br>
-    <label>
-      Time:
-      <!-- A slider representing minutes of the day (0-1440) -->
-      <input type="range" id="simTime" min="0" max="1440" value="720">
-      <span id="simTimeValue">12:00</span>
-    </label>
-    <br>
-    <button id="resetNow">Reset to Now</button>
-  </div>  
-
   <script>
     // === CONFIGURATION ===
     const DAY_WEDGE_COLOR = 'rgba(255,255,255,0.15)';
@@ -140,7 +124,7 @@
 
     // --- UPDATE THE DISPLAY (time, seasonal colors, circle) ---
     function updateDisplay() {
-      const now = simulateMode && simulatedTime ? simulatedTime : new Date();
+      const now = new Date();
       updateTimeDisplay(now);
       updateSeasonalBackgrounds(now);
       drawSunCircle(now);
@@ -304,10 +288,6 @@
   return { skyColor, earthColor };
 }
 
-// Global simulation mode variables
-let simulateMode = false;
-let simulatedTime = null;
-
     // Linear interpolation between two hex colors.
     function interpolateColor(hex1, hex2, t) {
       // Remove the '#' if present.
@@ -346,53 +326,7 @@ let simulatedTime = null;
     }
 
     // --- START THE APP ---
-    init(
-      document.getElementById("simDate").value = new Date().toISOString().split("T")[0];
-    );
-
-    // When the date or time slider changes, update simulatedTime.
-    document.getElementById("simDate").addEventListener("change", updateSimulationTime);
-    document.getElementById("simTime").addEventListener("input", () => {
-      // Update the displayed time value on the slider
-      const minutes = parseInt(document.getElementById("simTime").value, 10);
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      document.getElementById("simTimeValue").textContent = `${hours}:${mins.toString().padStart(2, '0')}`;
-      updateSimulationTime();
-    });
-
-    // Reset button: turn off simulation mode.
-    document.getElementById("resetNow").addEventListener("click", () => {
-      simulateMode = false;
-      simulatedTime = null;
-      // Also update the controls to match the current time
-      const now = new Date();
-      document.getElementById("simDate").value = now.toISOString().split("T")[0];
-      const totalMinutes = now.getHours() * 60 + now.getMinutes();
-      document.getElementById("simTime").value = totalMinutes;
-      document.getElementById("simTimeValue").textContent =
-        `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
-      updateDisplay();
-    });
-
-    function updateSimulationTime() {
-      // Mark that we're in simulation mode
-      simulateMode = true;
-      // Get the date from the date picker
-      const dateStr = document.getElementById("simDate").value;
-      if (!dateStr) return; // nothing to do if no date is selected
-      // Get time (in minutes) from the slider
-      const timeMinutes = parseInt(document.getElementById("simTime").value, 10);
-      // Create a new Date based on the date string (this will be midnight local time)
-      const simDate = new Date(dateStr);
-      // Set the hours and minutes from the slider
-      simDate.setHours(Math.floor(timeMinutes / 60));
-      simDate.setMinutes(timeMinutes % 60);
-      // Update our global simulated time
-      simulatedTime = simDate;
-      updateDisplay();
-    }
-
+    init();
   </script>
 </body>
 </html>
