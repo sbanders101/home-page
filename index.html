@@ -31,14 +31,22 @@
     }
     /* Time display on top */
     #timeDisplay {
-      position: absolute;
-      bottom: 10px;
+      position: fixed;           /* So it stays at the bottom even when scrolling */
+      bottom: 0;
+      left: 0;
       width: 100%;
+      padding: 10px 20px;        /* Adds a 20px margin on either side via padding */
       text-align: center;
-      font-family: sans-serif;
-      font-size: 2em;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       color: #fff;
       z-index: 2;
+      box-sizing: border-box;    /* Ensures padding doesn't cause overflow */
+
+      /* The magic: use vw so font scales with viewport width */
+      font-size: 10vw;     /* Adjust number to taste (e.g. 8vw, 5vw, etc.) */
+      line-height: 1;      /* Keep lines tight if it wraps */
+      white-space: nowrap; /* Prevent multiple lines if it gets big */
+      overflow: hidden;    /* Hide overflow if it’s too big */
     }
     /* The canvas for our circle fills the viewport and is above backgrounds */
     #sunCanvas {
@@ -130,15 +138,16 @@
       drawSunCircle(now);
     }
 
-    // Update the time text (format: DD . MM . YYYY HH : mm)
     function updateTimeDisplay(now) {
-      const day   = String(now.getDate()).padStart(2, '0');
+      // Get the last two digits of the year.
+      const yearShort = String(now.getFullYear()).slice(-2);
       const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year  = now.getFullYear();
+      const day   = String(now.getDate()).padStart(2, '0');
       const hours = String(now.getHours()).padStart(2, '0');
       const mins  = String(now.getMinutes()).padStart(2, '0');
+      
       document.getElementById('timeDisplay').textContent =
-        `${day} . ${month} . ${year} ${hours} : ${mins}`;
+        `${yearShort} . ${month} . ${day} . ${hours} . ${mins}`;
     }
 
     // Update the sky and earth colors based on the current date
@@ -327,6 +336,19 @@
 
     // --- START THE APP ---
     init();
+
+    document.addEventListener('keydown', (event) => {
+      // Check if the 't' or 'T' key is pressed
+      if (event.key.toLowerCase() === 't') {
+        const timeDisplay = document.getElementById('timeDisplay');
+        // Toggle the element's visibility
+        if (timeDisplay.style.display === 'none') {
+          timeDisplay.style.display = '';
+        } else {
+          timeDisplay.style.display = 'none';
+        }
+      }
+    });
   </script>
 </body>
 </html>
