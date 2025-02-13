@@ -89,6 +89,10 @@
     let sunriseTime = null;
     let sunsetTime = null;
 
+    function hoursSinceMidnight(date) {
+      return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+    }
+
     // --- INITIALIZATION ---
     function init() {
       // Try to get the user’s location; if unavailable, use defaults.
@@ -159,18 +163,23 @@
     function updateSeasonalBackgrounds(now) {
       const { skyColor, earthColor } = getSeasonalColors(now);
   
-    // Adjust this factor to control how much darker the edge becomes.
-    const darkenFactor = 0.85;
-    const skyDarker = darkenRGB(skyColor, darkenFactor);
-    const earthDarker = darkenRGB(earthColor, darkenFactor);
-    
-    // For the sky: make the top a bit darker, blending down to the seasonal sky color.
-    document.getElementById('sky').style.background =
-      `linear-gradient(to bottom, ${skyDarker}, ${skyColor})`;
-    
-    // For the earth: start with the seasonal earth color at the top, and darken toward the bottom.
-    document.getElementById('earth').style.background =
-      `linear-gradient(to bottom, ${earthColor}, ${earthDarker})`;
+      // Calculate how dark it should be right now
+      const twilightFactor = getTwilightDarkeningFactor(now);
+
+      // Interpolate both sky and earth colors toward near-black
+      const skyDark = darkenRGBToBlack(skyColor, twilightFactor);
+      const earthDark = darkenRGBToBlack(earthColor, twilightFactor);
+
+      // For extra effect, you can still do a gradient that darkens more at the top/bottom
+      const skyDarker   = darkenRGBToBlack(skyDark, 0.15);
+      const earthDarker = darkenRGBToBlack(earthDark, 0.15);
+
+      // Apply
+      document.getElementById('sky').style.background =
+        `linear-gradient(to bottom, ${skyDarker}, ${skyDark})`;
+
+      document.getElementById('earth').style.background =
+        `linear-gradient(to bottom, ${earthDark}, ${earthDarker})`;
     }
 
     // --- DRAW THE DAY/NIGHT CIRCLE ---
@@ -185,11 +194,6 @@
       const radius = Math.min(w, h) * 0.4;
       const centerX = w / 2;
       const centerY = h / 2;
-
-      // Helper: Convert a Date object to hours since midnight.
-      function hoursSinceMidnight(date) {
-        return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
-      }
 
       // Use fallback times if any of the twilight or sun times are missing.
       // Fallback: sunrise at 6:00, sunset at 18:00, civil dawn at 5:30, and civil dusk at 18:30.
@@ -352,6 +356,62 @@
       let r = Math.floor(parseInt(parts[0], 10) * factor);
       let g = Math.floor(parseInt(parts[1], 10) * factor);
       let b = Math.floor(parseInt(parts[2], 10) * factor);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function getTwilightDarkeningFactor(now) {
+      if (!sunriseTime || !sunsetTime || !civilTwilightBeginTime || !civilTwilightEndTime) {
+        return 0; // fallback: always day if times missing
+      }
+
+      const nowH = hoursSinceMidnight(now);
+      const sr  = hoursSinceMidnight(sunriseTime);
+      const ss  = hoursSinceMidnight(sunsetTime);
+      const ctb = hoursSinceMidnight(civilTwilightBeginTime);
+      const cte = hoursSinceMidnight(civilTwilightEndTime);
+
+      // If it's strictly daytime
+      if (nowH >= sr && nowH <= ss) {
+        return 0; // fully bright
+      }
+
+      // Dusk: sunset → civil twilight end
+      if (nowH >= ss && nowH < cte) {
+        const fraction = (nowH - ss) / (cte - ss);
+        return fraction; // goes from 0 at sunset to 1 at cte
+      }
+
+      // Night: cte → next day’s ctb
+      if (nowH >= cte && nowH < ctb + 24) {
+        // might need to handle midnight wrap properly, but let's keep it simple
+        return 1;
+      }
+
+      // Dawn: ctb → sunrise
+      if (nowH >= ctb && nowH < sr) {
+        const fraction = (nowH - ctb) / (sr - ctb);
+        return 1 - fraction; // goes from 1 at ctb to 0 at sr
+      }
+
+      // Fallback (wrap-around, etc.)
+      return 1;
+    }
+
+    function darkenRGBToBlack(rgbString, factor) {
+      // factor=0 => no darkening; factor=1 => near black
+      // Maybe only go 90% black if you want some horizon visibility
+      const maxDark = 0.9; 
+      const actual = factor * maxDark;
+
+      let parts = rgbString.match(/\d+/g);
+      if (!parts) return rgbString;
+      let r = parseInt(parts[0], 10);
+      let g = parseInt(parts[1], 10);
+      let b = parseInt(parts[2], 10);
+      
+      r = Math.floor(r * (1 - actual));
+      g = Math.floor(g * (1 - actual));
+      b = Math.floor(b * (1 - actual));
       return `rgb(${r}, ${g}, ${b})`;
     }
 
