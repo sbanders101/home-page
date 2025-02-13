@@ -73,6 +73,7 @@
     // === CONFIGURATION ===
     const DAY_WEDGE_COLOR = 'rgba(255,255,255,0.15)';
     const NIGHT_WEDGE_COLOR = 'rgba(0,0,0,0.1)';
+    const CIVIL_WEDGE_COLOR = 'rgba(0,0,0,0.05)';
     const DEFAULT_LAT = 40.7128;   // New York lat
     const DEFAULT_LON = -74.0060;  // New York lon
 
@@ -122,11 +123,15 @@
           // Parse the returned ISO strings into Date objects.
           sunriseTime = new Date(data.results.sunrise);
           sunsetTime  = new Date(data.results.sunset);
+          civilTwilightBeginTime = new Date(data.results.civil_twilight_begin);
+          civilTwilightEndTime   = new Date(data.results.civil_twilight_end);
         })
         .catch(err => {
           console.warn('Failed to fetch sunrise/sunset data; defaulting to a 12h day.', err);
           sunriseTime = null;
           sunsetTime  = null;
+          civilTwilightBeginTime = null;
+          civilTwilightEndTime   = null;
         });
     }
 
@@ -176,51 +181,74 @@
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // Center the circle on the horizon (vertical center)
+      // Determine the circle's center and radius.
       const radius = Math.min(w, h) * 0.4;
       const centerX = w / 2;
       const centerY = h / 2;
 
-      // Calculate day length. If the API call succeeded, use the actual sunrise/sunset;
-      // otherwise, fallback to a 6:00–18:00 (12h) day.
-      let dayStart = 6, dayEnd = 18;  // fallback values
-      if (sunriseTime && sunsetTime) {
-        dayStart = sunriseTime.getHours() + sunriseTime.getMinutes() / 60 + (sunriseTime.getSeconds() / 3600);
-        dayEnd   = sunsetTime.getHours() + sunsetTime.getMinutes() / 60;
+      // Helper: Convert a Date object to hours since midnight.
+      function hoursSinceMidnight(date) {
+        return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
       }
-      let totalDayHours = dayEnd - dayStart;
-      if (totalDayHours < 0) totalDayHours += 24;  // just in case of wrap‐around
 
-      const fractionDay = totalDayHours / 24;
-      const dayAngle = fractionDay * 2 * Math.PI; // white (day) wedge angle
-      // (The night wedge is the complementary arc.)
+      // Use fallback times if any of the twilight or sun times are missing.
+      // Fallback: sunrise at 6:00, sunset at 18:00, civil dawn at 5:30, and civil dusk at 18:30.
+      let srH = 6.0, ssH = 18.0, ctbH = 5.5, cteH = 18.5;
+      if (sunriseTime && sunsetTime && civilTwilightBeginTime && civilTwilightEndTime) {
+        srH = hoursSinceMidnight(sunriseTime);
+        ssH = hoursSinceMidnight(sunsetTime);
+        ctbH = hoursSinceMidnight(civilTwilightBeginTime);
+        cteH = hoursSinceMidnight(civilTwilightEndTime);
+      }
 
-      // --- Determine rotation so that the wedge boundary aligns at the right side (0 radians)
-      // We want the boundary (i.e. sunrise) to appear at 0.
-      // If sunriseTime isn’t available, assume sunrise is at 6:00.
-      const sunriseForRotation = dayStart;  // already in hours (or 6 fallback)
-      const nowHours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-      let elapsed = nowHours - sunriseForRotation;
-      if (elapsed < 0) elapsed += 24;
-      // Rotate the full circle (24h) counterclockwise:
-      const rotation = -(elapsed / 24) * 2 * Math.PI;
+      // Helper: Convert hours (0–24) into an angle (0–2π radians).
+      function hoursToAngle(hours) {
+        return (hours / 24) * 2 * Math.PI;
+      }
+      const srAngle  = hoursToAngle(srH);
+      const ssAngle  = hoursToAngle(ssH);
+      const ctbAngle = hoursToAngle(ctbH);
+      const cteAngle = hoursToAngle(cteH);
+
+      // We rotate the entire circle so that sunrise is at 0 radians.
+      const rotation = -srAngle;
 
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(rotation);
 
-      // Draw the day (white) wedge from angle 0 to dayAngle.
+      // --- Draw the four wedges ---
+
+      // 1. Dawn wedge: from civil twilight begin (CTB) to sunrise.
+      //    Note: since we rotated by -srAngle, sunrise is at 0.
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.arc(0, 0, radius, 0, dayAngle, false);
+      ctx.arc(0, 0, radius, ctbAngle - srAngle, 0, false);
+      ctx.closePath();
+      ctx.fillStyle = CIVIL_WEDGE_COLOR;
+      ctx.fill();
+
+      // 2. Day wedge: from sunrise (0) to sunset.
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, 0, ssAngle - srAngle, false);
       ctx.closePath();
       ctx.fillStyle = DAY_WEDGE_COLOR;
       ctx.fill();
 
-      // Draw the night (black) wedge for the remainder of the circle.
+      // 3. Dusk wedge: from sunset to civil twilight end.
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.arc(0, 0, radius, dayAngle, 2 * Math.PI, false);
+      ctx.arc(0, 0, radius, ssAngle - srAngle, cteAngle - srAngle, false);
+      ctx.closePath();
+      ctx.fillStyle = CIVIL_WEDGE_COLOR;
+      ctx.fill();
+
+      // 4. Night wedge: from civil twilight end to next day’s dawn.
+      //    We add 2π to the CTB angle so the arc correctly wraps around.
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, radius, cteAngle - srAngle, (ctbAngle + 2 * Math.PI) - srAngle, false);
       ctx.closePath();
       ctx.fillStyle = NIGHT_WEDGE_COLOR;
       ctx.fill();
