@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Seasons Change</title>
+    <!-- Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React + ReactDOM from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for in-browser JSX compilation -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.5/babel.min.js"></script>
+  </head>
+  <body>
+    <!-- Our React app will render into this root -->
+    <div id="root"></div>
+
+    <script type="text/babel">
+      // Four seasonal anchors + next winter anchor for wrap-around
+      // Each anchor includes a dayOfYear, shapeCount, shapeColors (same-length arrays!), and backgroundColor
+      const seasonalAnchors = [
+        {
+          dayOfYear: 33, // ~ Feb 2 (Mid-Winter)
+          shapeCount: 3,
+          shapeColors: ["#AEEAF2", "#85CEF2", "#90AEE8", "#9F99EC", "#CAB8F1"],
+          backgroundColor: "#EAF6FA"
+        },
+        {
+          dayOfYear: 125, // ~ May 5 (Mid-Spring)
+          shapeCount: 20,
+          shapeColors: ["#FD75AA", "#FDFC75", "#75CBFD", "#BDFD75", "#FD759F"],
+          backgroundColor: "#92FD75"
+        },
+        {
+          dayOfYear: 217, // ~ Aug 5 (Mid-Summer)
+          shapeCount: 6,
+          shapeColors: ["#FFFD31", "#00DF21", "#FFDE00", "#FFFC00", "#FF4205"],
+          backgroundColor: "#A3FCFE"
+        },
+        {
+          dayOfYear: 309, // ~ Nov 5 (Mid-Fall)
+          shapeCount: 13,
+          shapeColors: ["#FA980A", "#FA0A0A", "#AD4E00", "#FFDF08", "#FF8108"],
+          backgroundColor: "#FFE292"
+        },
+        {
+          dayOfYear: 398, // 365 + 33 -> next year's mid-winter anchor
+          shapeCount: 3,
+          shapeColors: ["#AEEAF2", "#85CEF2", "#90AEE8", "#9F99EC", "#CAB8F1"],
+          backgroundColor: "#EAF6FA"
+        }
+      ];
+
+      function getDayOfYear(date) {
+        const start = new Date(date.getFullYear(), 0, 1);
+        return Math.floor((date - start) / (24 * 60 * 60 * 1000)) + 1;
+      }
+
+      function interpolateValue(a, b, fraction) {
+        return a + (b - a) * fraction;
+      }
+
+      function interpolateColor(c1, c2, fraction) {
+        // c1, c2 are "#RRGGBB"
+        const r1 = parseInt(c1.substring(1, 3), 16);
+        const g1 = parseInt(c1.substring(3, 5), 16);
+        const b1 = parseInt(c1.substring(5, 7), 16);
+        const r2 = parseInt(c2.substring(1, 3), 16);
+        const g2 = parseInt(c2.substring(3, 5), 16);
+        const b2 = parseInt(c2.substring(5, 7), 16);
+
+        const r = Math.round(interpolateValue(r1, r2, fraction));
+        const g = Math.round(interpolateValue(g1, g2, fraction));
+        const b = Math.round(interpolateValue(b1, b2, fraction));
+
+        // Return #RRGGBB
+        return `#${(r | (1 << 8)).toString(16).slice(1)}${(g | (1 << 8)).toString(16).slice(1)}${(b | (1 << 8)).toString(16).slice(1)}`;
+      }
+
+      function getSeasonalAttributes(date) {
+        const doy = getDayOfYear(date);
+
+        let i = 0;
+        for (let idx = 0; idx < seasonalAnchors.length - 1; idx++) {
+          if (doy >= seasonalAnchors[idx].dayOfYear && doy < seasonalAnchors[idx + 1].dayOfYear) {
+            i = idx;
+            break;
+          } else if (doy >= seasonalAnchors[seasonalAnchors.length - 2].dayOfYear) {
+            // If after last real anchor (309) but < next winter anchor (398)
+            i = seasonalAnchors.length - 2; // Fall -> next winter
+          }
+        }
+
+        const anchor1 = seasonalAnchors[i];
+        const anchor2 = seasonalAnchors[i + 1];
+        const fraction = (doy - anchor1.dayOfYear) / (anchor2.dayOfYear - anchor1.dayOfYear);
+
+        const shapeCount = Math.round(interpolateValue(anchor1.shapeCount, anchor2.shapeCount, fraction));
+        const backgroundColor = interpolateColor(anchor1.backgroundColor, anchor2.backgroundColor, fraction);
+        const shapeColors = anchor1.shapeColors.map((c1, idx) => {
+          const c2 = anchor2.shapeColors[idx];
+          return interpolateColor(c1, c2, fraction);
+        });
+
+        return { shapeCount, shapeColors, backgroundColor };
+      }
+
+      function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      // Helper to build a Date from a year and day-of-year
+      function dateFromDayOfYear(year, day) {
+        const d = new Date(year, 0);
+        d.setDate(day);
+        return d;
+      }
+
+      function RandomAbstractBackground() {
+        const [shapes, setShapes] = React.useState([]);
+        const [dayOfYear, setDayOfYear] = React.useState(() => {
+          const today = new Date();
+          return getDayOfYear(today);
+        });
+        const [showSlider, setShowSlider] = React.useState(false);
+
+        // Recompute shapes and background whenever dayOfYear changes.
+        React.useEffect(() => {
+          const currentYear = new Date().getFullYear();
+          const testDate = dateFromDayOfYear(currentYear, dayOfYear);
+          const { shapeCount, shapeColors, backgroundColor } = getSeasonalAttributes(testDate);
+
+          const generatedShapes = Array.from({ length: shapeCount }, (_, i) => {
+            const color = shapeColors[i % shapeColors.length];
+            const size = getRandomInt(250, 400);
+            const xPos = getRandomInt(-50, 90);
+            const yPos = getRandomInt(-50, 90);
+            const borderRadius = getRandomInt(50, 70) + '%';
+
+            return {
+              color,
+              size,
+              xPos,
+              yPos,
+              borderRadius
+            };
+          });
+
+          setShapes(generatedShapes);
+          document.body.style.backgroundColor = backgroundColor;
+
+          return () => {
+            document.body.style.backgroundColor = '';
+          };
+        }, [dayOfYear]);
+
+        // Convert current dayOfYear to an actual date string for the label
+        const currentYear = new Date().getFullYear();
+        const sliderDate = dateFromDayOfYear(currentYear, dayOfYear);
+        const dateLabel = sliderDate.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+
+        return (
+          <div className="relative w-screen h-screen overflow-hidden">
+            {/* Shapes */}
+            {shapes.map((shape, index) => (
+              <div
+                key={index}
+                className="absolute opacity-30 mix-blend-multiply"
+                style={{
+                  width: shape.size,
+                  height: shape.size,
+                  backgroundColor: shape.color,
+                  borderRadius: shape.borderRadius,
+                  top: `${shape.yPos}%`,
+                  left: `${shape.xPos}%`,
+                  transform: `translate(-${shape.xPos}%, -${shape.yPos}%)`,
+                  filter: 'blur(40px)'
+                }}
+              />
+            ))}
+
+            {/* UI controls: a checkbox to show/hide the slider, and the slider if shown */}
+            <div className="absolute bottom-0 left-0 w-full p-2 bg-white bg-opacity-50 backdrop-blur-sm">
+              <label className="mr-4 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mr-1"
+                  checked={showSlider}
+                  onChange={(e) => setShowSlider(e.target.checked)}
+                />
+                Show date slider
+              </label>
+              {showSlider && (
+                <div className="flex flex-col items-center mt-2">
+                  <input
+                    type="range"
+                    min="1"
+                    max="365"
+                    value={dayOfYear}
+                    onChange={(e) => setDayOfYear(Number(e.target.value))}
+                  />
+                  <span className="text-xs mt-1">{dateLabel}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // Render the app into #root
+      ReactDOM.createRoot(document.getElementById('root')).render(<RandomAbstractBackground />);
+    </script>
+  </body>
+</html>
