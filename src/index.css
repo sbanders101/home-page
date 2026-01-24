@@ -1,0 +1,311 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Old+Standard+TT:wght@700&family=Space+Grotesk:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --paper: #f6efe4;
+    --mist: #dfe9e7;
+    --ink: #1c1a17;
+    --accent: #b4532f;
+    --font-body: "Space Grotesk", "Avenir Next", "Avenir", "Trebuchet MS", sans-serif;
+    --font-display: "Fraunces", "Iowan Old Style", "Georgia", serif;
+    --ui-panel-bg: rgba(255, 255, 255, 0.78);
+    --ui-panel-border: rgba(218, 209, 196, 0.7);
+    --ui-panel-shadow: 0 16px 50px -32px rgba(0, 0, 0, 0.45);
+    --ui-card-shadow: 0 12px 40px -28px rgba(0, 0, 0, 0.35);
+    --ui-panel-blur: 14px;
+    --ui-radius-lg: 1.35rem;
+    --ui-radius-md: 1rem;
+    --ui-radius-sm: 0.85rem;
+    --ui-ring: rgba(54, 47, 39, 0.55);
+    --ui-hover: rgba(226, 216, 204, 0.55);
+    --ui-padding: 1.25rem;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background:
+      radial-gradient(700px 480px at 12% 18%, rgba(255, 255, 255, 0.85), transparent 60%),
+      radial-gradient(520px 360px at 85% 10%, rgba(255, 213, 179, 0.5), transparent 55%),
+      linear-gradient(120deg, var(--paper), var(--mist));
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+
+  .ui-panel {
+    border-radius: var(--ui-radius-lg);
+    border: 1px solid var(--ui-panel-border);
+    background: var(--ui-panel-bg);
+    box-shadow: var(--ui-panel-shadow);
+    backdrop-filter: blur(var(--ui-panel-blur));
+    -webkit-backdrop-filter: blur(var(--ui-panel-blur));
+  }
+
+  .ui-button {
+    border: 1px solid rgba(210, 200, 188, 0.7);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.39),
+      rgba(255, 255, 255, 0.18)
+    );
+    box-shadow:
+      0 12px 30px -22px rgba(0, 0, 0, 0.45),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    color: #2f2a24;
+    backdrop-filter: blur(var(--ui-panel-blur)) saturate(1.35);
+    -webkit-backdrop-filter: blur(var(--ui-panel-blur)) saturate(1.35);
+  }
+
+  .ui-button:hover {
+    border-color: rgba(188, 177, 164, 0.9);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.43),
+      rgba(255, 255, 255, 0.21)
+    );
+  }
+
+  .ui-button:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--ui-ring),
+      var(--ui-panel-shadow);
+  }
+
+  .ui-card {
+    display: block;
+    border-radius: var(--ui-radius-lg);
+    border: 1px solid var(--ui-panel-border);
+    background: var(--ui-panel-bg);
+    box-shadow: var(--ui-card-shadow);
+    backdrop-filter: blur(var(--ui-panel-blur));
+    -webkit-backdrop-filter: blur(var(--ui-panel-blur));
+    padding: var(--ui-padding);
+  }
+
+  .ui-card:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--ui-ring),
+      var(--ui-card-shadow);
+  }
+
+  .ui-pill {
+    border: 1px solid var(--ui-panel-border);
+    background: var(--ui-panel-bg);
+    padding: 0.3rem 1rem;
+    backdrop-filter: blur(var(--ui-panel-blur));
+    -webkit-backdrop-filter: blur(var(--ui-panel-blur));
+  }
+
+  .ui-menu-item:hover {
+    background: var(--ui-hover);
+  }
+
+  .ui-menu-item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring);
+  }
+
+  .sun-clock {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  .sun-clock__sky,
+  .sun-clock__earth {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    z-index: 0;
+  }
+
+  .sun-clock__sky {
+    top: 0;
+    height: 50%;
+    background-color: #d2eeff;
+  }
+
+  .sun-clock__earth {
+    bottom: 0;
+    height: 50%;
+    background-color: #edf9ff;
+  }
+
+  .sun-clock__canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .sun-clock__time {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    text-align: center;
+    font-family: var(--font-display);
+    color: #fff;
+    z-index: 2;
+    box-sizing: border-box;
+    font-size: 10vw;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .christmas-room {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+
+  .christmas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #4a69bd, #82ccdd);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: gold;
+    text-align: center;
+  }
+
+  .christmas__title {
+    font-family: "Old Standard TT", serif;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    color: gold;
+    text-shadow:
+      0 0 10px rgba(255, 223, 0, 0.8),
+      0 0 20px rgba(255, 223, 0, 0.6),
+      0 0 30px rgba(255, 223, 0, 0.4);
+    animation: christmas-sparkle 2s infinite alternate;
+    margin: 0;
+  }
+
+  .christmas--safari .christmas__title {
+    text-shadow:
+      0 0 3px rgba(255, 223, 0, 0.5),
+      0 0 6px rgba(255, 223, 0, 0.3) !important;
+    animation: none !important;
+  }
+
+  .christmas__countdown {
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+    font-family: "Old Standard TT", serif;
+    color: white;
+    margin-top: 20px;
+    text-shadow:
+      0 0 5px rgba(255, 255, 255, 0.8),
+      0 0 10px rgba(255, 255, 255, 0.6);
+  }
+
+  .christmas__snowflake {
+    position: absolute;
+    top: -10px;
+    color: white;
+    font-size: 1rem;
+    user-select: none;
+    pointer-events: none;
+    animation: christmas-fall linear infinite;
+  }
+
+  .room-transition {
+    transition: opacity 280ms ease, filter 280ms ease;
+    will-change: opacity, filter;
+  }
+
+  .room-transition--out {
+    opacity: 0;
+    filter: blur(8px);
+  }
+
+  .safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .full-bleed {
+    min-height: 100vh;
+  }
+}
+
+@supports (height: 100svh) {
+  .full-bleed {
+    min-height: 100svh;
+  }
+}
+
+@supports (height: 100dvh) {
+  .full-bleed {
+    min-height: 100dvh;
+  }
+}
+
+@keyframes christmas-sparkle {
+  0% {
+    text-shadow:
+      0 0 10px rgba(255, 223, 0, 0.8),
+      0 0 20px rgba(255, 223, 0, 0.6),
+      0 0 30px rgba(255, 223, 0, 0.4);
+  }
+  100% {
+    text-shadow:
+      0 0 15px rgba(255, 223, 0, 1),
+      0 0 25px rgba(255, 223, 0, 0.8),
+      0 0 35px rgba(255, 223, 0, 0.6);
+  }
+}
+
+@keyframes christmas-fall {
+  to {
+    transform: translateY(100vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-transition {
+    transition: none;
+  }
+
+  .room-transition--out {
+    opacity: 1;
+    filter: none;
+  }
+
+  .christmas__title {
+    animation: none;
+  }
+
+  .christmas__snowflake {
+    animation: none;
+  }
+}
