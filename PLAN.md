@@ -1,9 +1,10 @@
-Goal: Confirm deep links + legacy links and add README run/deploy instructions.
+Goal: Add the D&D Dice room.
 
 Plan (3–7 steps):
-1) Add a root README with local run/build and deploy guidance.
-2) Document hash routes and legacy paths in the README.
-3) Log progress/decisions and update the roadmap.
+1) Port the legacy DnD Dice canvas into an init/cleanup module.
+2) Create a React wrapper and full-bleed styles.
+3) Add the route to the router, menu, and rooms grid.
+4) Log progress/decisions and update the roadmap.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -32,6 +33,13 @@ Progress (append bullets):
 - Added full-bleed viewport sizing with svh/dvh support and Safari backdrop prefixes.
 - Added a GitHub Actions workflow to build and deploy `dist/` to Pages.
 - Added a root README with hash route, legacy link, and run/deploy instructions.
+- Redirected /#/ to /#/sun and moved the rooms grid to /#/rooms.
+- Updated back links and README to reflect the rooms route.
+- Added a simple SVG favicon and linked it in the app entry.
+- Fixed early-January interpolation by wrapping days before the first anchor.
+- Snowflakes now start hidden and fade in when their fall animation begins.
+- Ported the D&D Dice canvas into an init/cleanup module and React wrapper.
+- Added the /#/dice route to the menu, rooms grid, and full-bleed layout list.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -46,5 +54,10 @@ Decisions (append bullets):
 - Preferred CSS-based safe-area handling to avoid JS layout logic.
 - Targeted Node 20 in the Pages workflow for consistency.
 - Documented legacy access paths without adding new UI links.
+- Kept the rooms page accessible only via /#/rooms (no menu item) to preserve the 3-room menu requirement.
+- Used an SVG favicon for a lightweight, theme-consistent icon.
+- Adjusted day-of-year logic for Seasonal Abstracts only to preserve anchor list.
+- Used CSS variables for per-flake opacity to keep initial state hidden.
+- Kept the D&D Dice room canvas-based to match the legacy interaction model.
 
 Next:

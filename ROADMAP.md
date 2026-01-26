@@ -6,7 +6,27 @@ How to work:
 - For that item: update PLAN.md, implement, keep PLAN.md updated, then mark the item as done.
 - Keep changes small and targeted. Do not refactor unrelated stuff.
 
-## Phase 1: Safe foundation
+## Current: Fixes + additions
+- [x] Add a simple favicon
+  - Provide a small SVG favicon for local dev and production
+
+- [x] Default landing route to Sun Clock while keeping the home page available
+  - Visiting `/#/` should redirect to `/#/sun`
+  - Home page remains accessible (e.g., `/#/home` or another explicit route)
+
+- [x] Fix Seasonal Abstracts early-January color interpolation bug
+  - Smoothly continue from Dec 31 into early January
+  - Avoid abrupt green/yellow jumps in early January
+
+- [x] Hide initial snowflake line in Christmas Countdown
+  - Each snowflake should appear only when its animation begins
+
+- [x] Add a new “D&D Dice” room
+  - Port `public/legacy/dnd_dice.html` into a full-bleed route
+  - Add to the glyph menu and home grid
+
+## History
+### Phase 1: Safe foundation
 - [x] Create `public/legacy/` and copy the current v1 pages into it (do not delete originals yet)
   - `public/legacy/sun-clock.html` (copy of current root `index.html`)
   - `public/legacy/christmas_countdown.html` (copy)
@@ -28,7 +48,7 @@ How to work:
   - Default: fade/blur transition between routes
   - Reduced motion: no blur, minimal or no animation
 
-## Phase 2: Port the rooms
+### Phase 2: Port the rooms
 - [x] Port Seasonal Abstracts into a React route (`/#/seasonal`)
   - Preserve the slider/preview behavior
   - Keep it fullscreen and responsive
@@ -43,11 +63,11 @@ How to work:
   - Ensure cleanup removes snow nodes and clears timers
   - Preserve Safari adjustments and sparkle behavior
 
-## Phase 3: Unify + polish
+### Phase 3: Unify + polish
 - [x] Introduce shared season utility (day-of-year, interpolation) and reuse in Sun + Seasonal
 - [x] Unify global design tokens (fonts, spacing, overlay styling) across rooms
 - [x] Performance and compatibility sweep (Safari, iOS, reduced motion, resize handling)
 
-## Phase 4: Deploy
+### Phase 4: Deploy
 - [x] Add GitHub Pages deployment (likely GitHub Actions building `dist/`)
 - [x] Confirm deep links work (hash routing), legacy links work, and README has run/deploy instructions

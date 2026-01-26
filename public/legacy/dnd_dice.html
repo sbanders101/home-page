@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Canvas DnD Dice Roller</title>
+<style>
+  :root {
+    color-scheme: dark;
+  }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0b0f17;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: pointer;
+  }
+  /* Prevent touch long-press callouts on mobile */
+  * { -webkit-tap-highlight-color: rgba(0,0,0,0); }
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="DnD Dice Roller (Canvas)"></canvas>
+
+<script>
+(function () {
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+
+  // --- HiDPI / resize handling ---
+  let DPR = Math.max(1, window.devicePixelRatio || 1);
+  function resizeCanvas() {
+    DPR = Math.max(1, window.devicePixelRatio || 1);
+    const cssW = window.innerWidth;
+    const cssH = window.innerHeight;
+    canvas.width = Math.floor(cssW * DPR);
+    canvas.height = Math.floor(cssH * DPR);
+    // Use CSS pixels for draw coordinates
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layoutDice();
+    requestRender();
+  }
+  window.addEventListener('resize', resizeCanvas, { passive: true });
+
+  // --- Dice definitions ---
+  // shapeSides controls polygon look; "sides" controls roll range
+  const dice = [
+    { key: 'd4',   label: 'd4',   sides: 4,   shapeSides: 3,  color: '#e74c3c' },
+    { key: 'd6',   label: 'd6',   sides: 6,   shapeSides: 6,  color: '#3498db' },
+    { key: 'd8',   label: 'd8',   sides: 8,   shapeSides: 8,  color: '#f1c40f' },
+    { key: 'd10',  label: 'd10',  sides: 10,  shapeSides: 10, color: '#2ecc71' },
+    { key: 'd12',  label: 'd12',  sides: 12,  shapeSides: 12, color: '#9b59b6' },
+    { key: 'd20',  label: 'd20',  sides: 20,  shapeSides: 20, color: '#e67e22' },
+    { key: 'd100', label: 'd%',   sides: 100, shapeSides: 10, color: '#16a085' }, // percentile
+  ];
+
+  // Per-die runtime state
+  const state = new Map(); // key -> {cx, cy, r, rot, rolling, last, flicker, path?}
+  let hoverKey = null;
+  let anim = null; // current animation info
+  let needsRender = true;
+
+  // --- Secure RNG with rejection sampling (uniform) ---
+  function secureRandomInt(min, max) {
+    const range = max - min + 1;
+    if (range <= 0) return min;
+    const cryptoObj = (typeof crypto !== 'undefined' && crypto.getRandomValues) ? crypto : null;
+
+    if (cryptoObj) {
+      const u32 = new Uint32Array(1);
+      const maxUnbiased = Math.floor(0x100000000 / range) * range - 1; // 2^32 space
+      let x;
+      do {
+        cryptoObj.getRandomValues(u32);
+        x = u32[0] >>> 0; // ensure unsigned
+      } while (x > maxUnbiased);
+      return min + (x % range);
+    } else {
+      // Fallback
+      return min + Math.floor(Math.random() * range);
+    }
+  }
+
+  // --- Layout dice in a responsive grid ---
+  function layoutDice() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    // Title + footer areas inside canvas
+    const topPad = 72;
+    const bottomPad = 84;
+    const usableH = Math.max(200, H - (topPad + bottomPad));
+
+    // We’ll arrange dice in 2 rows (or 3 on very tall screens)
+    const rows = (H > 900) ? 3 : 2;
+    const cols = Math.ceil(dice.length / rows);
+
+    const cellW = W / cols;
+    const cellH = usableH / rows;
+    const radius = Math.max(36, Math.min( Math.min(cellW, cellH) * 0.32, 90 ));
+
+    let i = 0;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const d = dice[i++];
+        if (!d) break;
+        const cx = (c + 0.5) * cellW;
+        const cy = topPad + (r + 0.5) * cellH;
+        const prev = state.get(d.key) || {};
+        state.set(d.key, {
+          ...prev,
+          cx, cy, r: radius,
+          rot: prev.rot || 0,
+          rolling: prev.rolling || false,
+          last: prev.last ?? null,
+          flicker: prev.flicker || null,
+        });
+      }
+    }
+    requestRender();
+  }
+
+  // --- Drawing helpers ---
+  function roundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawPolygon(cx, cy, radius, sides, rotation) {
+    ctx.beginPath();
+    for (let i = 0; i < sides; i++) {
+      const a = rotation + (i * Math.PI * 2) / sides;
+      const x = cx + Math.cos(a) * radius;
+      const y = cy + Math.sin(a) * radius;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+  // --- Render loop (only runs when needed or animating) ---
+  function requestRender() { needsRender = true; if (!anim) drawFrame(); }
+  function drawFrame(ts) {
+    if (!needsRender && !anim) return; // nothing to do
+    needsRender = false;
+
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#0b0f17');
+    grad.addColorStop(1, '#111827');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle vignette
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    const vg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W, H) * 0.8);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+
+    // Header text
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = '600 22px ui-sans-serif, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click a die to roll', W/2, 40);
+    ctx.restore();
+
+    // Handle animation state
+    if (anim) {
+      if (!anim.start) anim.start = performance.now();
+      const t = Math.min(1, (ts - anim.start) / anim.duration);
+      const e = easeOutCubic(t);
+      const s = state.get(anim.key);
+      if (s) {
+        s.rot = anim.rotStart + e * anim.rotDelta;
+        // Update flicker value every ~60ms during the first 80% of the spin
+        const now = ts;
+        if (t < 0.8 && now - (anim.lastFlicker || 0) > 60) {
+          s.flicker = secureRandomInt(1, anim.sides);
+          anim.lastFlicker = now;
+        }
+      }
+      // Finish animation
+      if (t >= 1) {
+        const s2 = state.get(anim.key);
+        if (s2) {
+          s2.rolling = false;
+          s2.flicker = null;
+          s2.last = secureRandomInt(1, anim.sides);
+          // Special display for d%
+          if (anim.sides === 100) {
+            // keep as 1..100; we'll format on draw
+          }
+        }
+        anim = null;
+      } else {
+        // keep looping while animating
+        requestAnimationFrame(drawFrame);
+      }
+    }
+
+    // Draw dice
+    for (const d of dice) {
+      const s = state.get(d.key);
+      if (!s) continue;
+      const { cx, cy, r } = s;
+
+      const hovered = (hoverKey === d.key) && !s.rolling;
+      const scale = hovered ? 1.06 : (s.rolling ? 1.08 : 1.0);
+      const radius = r * scale;
+
+      // Shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 6;
+      drawPolygon(cx, cy, radius, d.shapeSides, s.rot || 0);
+      ctx.fillStyle = d.color;
+      ctx.fill();
+
+      // Inner highlight
+      ctx.clip();
+      const rg = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, radius * 0.1, cx, cy, radius * 1.2);
+      rg.addColorStop(0, 'rgba(255,255,255,0.28)');
+      rg.addColorStop(1, 'rgba(255,255,255,0.04)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+      ctx.restore();
+
+      // Outline
+      ctx.save();
+      drawPolygon(cx, cy, radius, d.shapeSides, s.rot || 0);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.stroke();
+      ctx.restore();
+
+      // Label (die type)
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '700 16px ui-sans-serif, system-ui';
+      ctx.fillText(d.label, cx, cy - radius * 0.55);
+
+      // Result text (flicker while spinning, else last)
+      let displayVal = '';
+      if (s.rolling && s.flicker != null) {
+        displayVal = String(s.flicker);
+      } else if (s.last != null) {
+        displayVal = String(s.last);
+      }
+
+      if (d.sides === 100 && displayVal) {
+        // Format percentile-like (1..100 -> "100" or zero-padded)
+        if (displayVal === '100') {
+          displayVal = '100';
+        } else {
+          // two digits with leading zeros
+          const n = parseInt(displayVal, 10);
+          displayVal = n.toString().padStart(2, '0');
+        }
+      }
+
+      if (displayVal) {
+        ctx.font = '800 28px ui-sans-serif, system-ui';
+        ctx.fillText(displayVal, cx, cy + radius * 0.05);
+      }
+      ctx.restore();
+    }
+
+    // Footer / history bar
+    const footerH = 50;
+    ctx.save();
+    const y = H - footerH - 18;
+    roundRect(20, y, W - 40, footerH, 12);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = '600 14px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Roll history (latest first): ' + history.join('   '), 34, y + footerH/2);
+    ctx.restore();
+
+    // If we got here without an active anim, and we were asked to render, we're done.
+  }
+
+  // --- Roll history ---
+  const history = [];
+  function pushHistory(key, sides, val) {
+    const tag = (sides === 100) ? `${key}→${val}` : `${key}→${val}`;
+    history.unshift(tag);
+    if (history.length > 12) history.pop();
+  }
+
+  // --- Input handling ---
+  function canvasPoint(evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
+  }
+
+  function hitTest(x, y) {
+    // Circular hit around each die center
+    for (const d of dice) {
+      const s = state.get(d.key);
+      if (!s) continue;
+      const hoverRadius = s.r * 1.1;
+      const dx = x - s.cx;
+      const dy = y - s.cy;
+      if (dx*dx + dy*dy <= hoverRadius*hoverRadius) {
+        return d.key;
+      }
+    }
+    return null;
+  }
+
+  canvas.addEventListener('pointermove', (e) => {
+    const { x, y } = canvasPoint(e);
+    const hit = hitTest(x, y);
+    if (hit !== hoverKey) {
+      hoverKey = hit;
+      requestRender();
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('pointerleave', () => {
+    hoverKey = null;
+    requestRender();
+  }, { passive: true });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const { x, y } = canvasPoint(e);
+    const key = hitTest(x, y);
+    if (!key) return;
+    const d = dice.find(dd => dd.key === key);
+    const s = state.get(key);
+    if (!d || !s || s.rolling || anim) return; // ignore if mid-spin
+
+    // Start spin animation
+    s.rolling = true;
+    const fullTurns = secureRandomInt(3, 6); // 3-6 full spins
+    const rotDelta = fullTurns * Math.PI * 2 + (Math.random() - 0.5) * Math.PI * 0.5;
+    anim = {
+      key,
+      sides: d.sides,
+      duration: secureRandomInt(900, 1300),
+      start: null,
+      rotStart: s.rot || 0,
+      rotDelta,
+      lastFlicker: 0
+    };
+
+    // When the animation completes, we’ll update history in a microtask
+    const finishWatcher = () => {
+      if (!anim) {
+        // s.last was set on completion
+        if (s.last != null) {
+          pushHistory(d.label, d.sides, s.last);
+          requestRender();
+        }
+      } else {
+        requestAnimationFrame(finishWatcher);
+      }
+    };
+    requestAnimationFrame(finishWatcher);
+
+    // Kick the draw loop for the animation
+    requestAnimationFrame(drawFrame);
+  });
+
+  // --- Init ---
+  resizeCanvas();
+  // Initial render
+  requestRender();
+  // If requestRender didn't schedule (no anim), do one paint now
+  requestAnimationFrame(drawFrame);
+})();
+</script>
+</body>
+</html>
