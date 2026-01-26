@@ -12,7 +12,10 @@ const createSnowflakes = (container) => {
     snowflake.style.left = `${Math.random() * 100}vw`;
     snowflake.style.animationDuration = `${Math.random() * 5 + 5}s`;
     snowflake.style.fontSize = `${Math.random() * 1 + 1}rem`;
-    snowflake.style.opacity = `${Math.random() * 0.8 + 0.2}`;
+    snowflake.style.setProperty(
+      "--flake-opacity",
+      `${Math.random() * 0.8 + 0.2}`
+    );
     snowflake.style.animationDelay = `${Math.random() * 5}s`;
     container.appendChild(snowflake);
     flakes.push(snowflake);

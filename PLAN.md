@@ -1,9 +1,10 @@
-Goal: Fix Seasonal Abstracts early-January color interpolation bug.
+Goal: Hide initial snowflake line in Christmas Countdown.
 
 Plan (3–7 steps):
-1) Adjust seasonal interpolation to handle days before the first anchor.
-2) Ensure early January wraps from late autumn into winter smoothly.
-3) Log progress/decisions and update the roadmap.
+1) Update snowflake styles to start hidden until animation begins.
+2) Pass per-flake opacity via CSS variables instead of inline opacity.
+3) Verify reduced-motion behavior keeps flakes visible.
+4) Log progress/decisions and update the roadmap.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -36,6 +37,7 @@ Progress (append bullets):
 - Updated back links and README to reflect the rooms route.
 - Added a simple SVG favicon and linked it in the app entry.
 - Fixed early-January interpolation by wrapping days before the first anchor.
+- Snowflakes now start hidden and fade in when their fall animation begins.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -53,5 +55,6 @@ Decisions (append bullets):
 - Kept the rooms page accessible only via /#/rooms (no menu item) to preserve the 3-room menu requirement.
 - Used an SVG favicon for a lightweight, theme-consistent icon.
 - Adjusted day-of-year logic for Seasonal Abstracts only to preserve anchor list.
+- Used CSS variables for per-flake opacity to keep initial state hidden.
 
 Next:

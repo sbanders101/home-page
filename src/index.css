@@ -235,6 +235,7 @@
     font-size: 1rem;
     user-select: none;
     pointer-events: none;
+    opacity: 0;
     animation: christmas-fall linear infinite;
   }
 
@@ -286,8 +287,16 @@
 }
 
 @keyframes christmas-fall {
-  to {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--flake-opacity, 0.9);
+  }
+  100% {
     transform: translateY(100vh);
+    opacity: var(--flake-opacity, 0.9);
   }
 }
 
@@ -307,5 +316,7 @@
 
   .christmas__snowflake {
     animation: none;
+    opacity: var(--flake-opacity, 0.8);
+    transform: translateY(0);
   }
 }

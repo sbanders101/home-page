@@ -18,7 +18,7 @@ How to work:
   - Smoothly continue from Dec 31 into early January
   - Avoid abrupt green/yellow jumps in early January
 
-- [ ] Hide initial snowflake line in Christmas Countdown
+- [x] Hide initial snowflake line in Christmas Countdown
   - Each snowflake should appear only when its animation begins
 
 - [ ] Add a new “D&D Dice” room
