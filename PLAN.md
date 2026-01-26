@@ -1,9 +1,9 @@
-Goal: Hide initial snowflake line in Christmas Countdown.
+Goal: Add the D&D Dice room.
 
 Plan (3–7 steps):
-1) Update snowflake styles to start hidden until animation begins.
-2) Pass per-flake opacity via CSS variables instead of inline opacity.
-3) Verify reduced-motion behavior keeps flakes visible.
+1) Port the legacy DnD Dice canvas into an init/cleanup module.
+2) Create a React wrapper and full-bleed styles.
+3) Add the route to the router, menu, and rooms grid.
 4) Log progress/decisions and update the roadmap.
 
 Progress (append bullets):
@@ -38,6 +38,8 @@ Progress (append bullets):
 - Added a simple SVG favicon and linked it in the app entry.
 - Fixed early-January interpolation by wrapping days before the first anchor.
 - Snowflakes now start hidden and fade in when their fall animation begins.
+- Ported the D&D Dice canvas into an init/cleanup module and React wrapper.
+- Added the /#/dice route to the menu, rooms grid, and full-bleed layout list.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -56,5 +58,6 @@ Decisions (append bullets):
 - Used an SVG favicon for a lightweight, theme-consistent icon.
 - Adjusted day-of-year logic for Seasonal Abstracts only to preserve anchor list.
 - Used CSS variables for per-flake opacity to keep initial state hidden.
+- Kept the D&D Dice room canvas-based to match the legacy interaction model.
 
 Next:

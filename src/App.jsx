@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import SeasonalAbstracts from "./rooms/SeasonalAbstracts.jsx";
 import SunClock from "./rooms/SunClock.jsx";
 import ChristmasCountdown from "./rooms/ChristmasCountdown.jsx";
+import DnDDice from "./rooms/DnDDice.jsx";
 
 const TRANSITION_MS = 280;
 
@@ -12,7 +13,8 @@ const ROUTES = {
   [ROOMS_ROUTE]: Home,
   "/sun": SunClock,
   "/seasonal": SeasonalAbstracts,
-  "/christmas": ChristmasCountdown
+  "/christmas": ChristmasCountdown,
+  "/dice": DnDDice
 };
 
 const ROOM_LINKS = [
@@ -30,6 +32,11 @@ const ROOM_LINKS = [
     name: "Christmas Countdown",
     path: "#/christmas",
     detail: "Old-timey countdown with snow and sparkle."
+  },
+  {
+    name: "D&D Dice",
+    path: "#/dice",
+    detail: "Click to roll classic tabletop dice with history."
   }
 ];
 
@@ -134,7 +141,8 @@ export default function App() {
   const isFullBleedRoute =
     displayPath === "/seasonal" ||
     displayPath === "/sun" ||
-    displayPath === "/christmas";
+    displayPath === "/christmas" ||
+    displayPath === "/dice";
 
   return (
     <div

@@ -239,6 +239,26 @@
     animation: christmas-fall linear infinite;
   }
 
+  .dnd-dice-room {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .dnd-dice {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #0b0f17;
+  }
+
+  .dnd-dice__canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: pointer;
+  }
+
   .room-transition {
     transition: opacity 280ms ease, filter 280ms ease;
     will-change: opacity, filter;

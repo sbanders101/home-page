@@ -21,7 +21,7 @@ How to work:
 - [x] Hide initial snowflake line in Christmas Countdown
   - Each snowflake should appear only when its animation begins
 
-- [ ] Add a new “D&D Dice” room
+- [x] Add a new “D&D Dice” room
   - Port `public/legacy/dnd_dice.html` into a full-bleed route
   - Add to the glyph menu and home grid
 
