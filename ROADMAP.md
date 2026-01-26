@@ -7,6 +7,9 @@ How to work:
 - Keep changes small and targeted. Do not refactor unrelated stuff.
 
 ## Current: Fixes + additions
+- [x] Add a simple favicon
+  - Provide a small SVG favicon for local dev and production
+
 - [x] Default landing route to Sun Clock while keeping the home page available
   - Visiting `/#/` should redirect to `/#/sun`
   - Home page remains accessible (e.g., `/#/home` or another explicit route)

@@ -1,10 +1,9 @@
-Goal: Default landing to Sun Clock while keeping the rooms page at /#/rooms.
+Goal: Add a simple favicon.
 
 Plan (3–7 steps):
-1) Update routing to treat /#/ as /#/sun and add /#/rooms for the home grid.
-2) Update in-app links that point back to the home grid.
-3) Refresh README routes to reflect the new default landing behavior.
-4) Log progress/decisions and update the roadmap.
+1) Create a small SVG favicon in public/.
+2) Reference the favicon in the Vite entry HTML.
+3) Log progress/decisions and update the roadmap.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -35,6 +34,7 @@ Progress (append bullets):
 - Added a root README with hash route, legacy link, and run/deploy instructions.
 - Redirected /#/ to /#/sun and moved the rooms grid to /#/rooms.
 - Updated back links and README to reflect the rooms route.
+- Added a simple SVG favicon and linked it in the app entry.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -50,5 +50,6 @@ Decisions (append bullets):
 - Targeted Node 20 in the Pages workflow for consistency.
 - Documented legacy access paths without adding new UI links.
 - Kept the rooms page accessible only via /#/rooms (no menu item) to preserve the 3-room menu requirement.
+- Used an SVG favicon for a lightweight, theme-consistent icon.
 
 Next:
