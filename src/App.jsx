@@ -5,8 +5,11 @@ import ChristmasCountdown from "./rooms/ChristmasCountdown.jsx";
 
 const TRANSITION_MS = 280;
 
+const DEFAULT_ROUTE = "/sun";
+const ROOMS_ROUTE = "/rooms";
+
 const ROUTES = {
-  "/": Home,
+  [ROOMS_ROUTE]: Home,
   "/sun": SunClock,
   "/seasonal": SeasonalAbstracts,
   "/christmas": ChristmasCountdown
@@ -39,19 +42,33 @@ const getHashPath = () => {
   return path.startsWith("/") ? path : `/${path}`;
 };
 
+const getEffectivePath = () => {
+  const hash = window.location.hash;
+  if (!hash || hash === "#/") {
+    return DEFAULT_ROUTE;
+  }
+  return getHashPath();
+};
+
 export default function App() {
-  const [path, setPath] = useState(getHashPath());
-  const [displayPath, setDisplayPath] = useState(getHashPath());
+  const [path, setPath] = useState(getEffectivePath());
+  const [displayPath, setDisplayPath] = useState(getEffectivePath());
   const [menuOpen, setMenuOpen] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    if (!window.location.hash) {
-      window.location.hash = "#/";
+    if (!window.location.hash || window.location.hash === "#/") {
+      window.location.hash = `#${DEFAULT_ROUTE}`;
     }
 
-    const handleChange = () => setPath(getHashPath());
+    const handleChange = () => {
+      if (window.location.hash === "#/") {
+        window.location.hash = `#${DEFAULT_ROUTE}`;
+        return;
+      }
+      setPath(getEffectivePath());
+    };
     window.addEventListener("hashchange", handleChange);
 
     return () => window.removeEventListener("hashchange", handleChange);
@@ -237,8 +254,8 @@ function Room({ title, summary }) {
         <h1 className="font-display text-4xl text-stone-900">{title}</h1>
         <p className="max-w-2xl text-base text-stone-700">{summary}</p>
       </div>
-      <a className="text-sm text-stone-700 underline" href="#/">
-        Back to home
+      <a className="text-sm text-stone-700 underline" href="#/rooms">
+        Back to rooms
       </a>
     </section>
   );
@@ -251,8 +268,8 @@ function NotFound() {
       <p className="text-stone-700">
         That room does not exist yet. Return home to choose another route.
       </p>
-      <a className="text-sm text-stone-700 underline" href="#/">
-        Back to home
+      <a className="text-sm text-stone-700 underline" href="#/rooms">
+        Back to rooms
       </a>
     </section>
   );

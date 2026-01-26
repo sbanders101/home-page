@@ -1,9 +1,10 @@
-Goal: Confirm deep links + legacy links and add README run/deploy instructions.
+Goal: Default landing to Sun Clock while keeping the rooms page at /#/rooms.
 
 Plan (3–7 steps):
-1) Add a root README with local run/build and deploy guidance.
-2) Document hash routes and legacy paths in the README.
-3) Log progress/decisions and update the roadmap.
+1) Update routing to treat /#/ as /#/sun and add /#/rooms for the home grid.
+2) Update in-app links that point back to the home grid.
+3) Refresh README routes to reflect the new default landing behavior.
+4) Log progress/decisions and update the roadmap.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -32,6 +33,8 @@ Progress (append bullets):
 - Added full-bleed viewport sizing with svh/dvh support and Safari backdrop prefixes.
 - Added a GitHub Actions workflow to build and deploy `dist/` to Pages.
 - Added a root README with hash route, legacy link, and run/deploy instructions.
+- Redirected /#/ to /#/sun and moved the rooms grid to /#/rooms.
+- Updated back links and README to reflect the rooms route.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -46,5 +49,6 @@ Decisions (append bullets):
 - Preferred CSS-based safe-area handling to avoid JS layout logic.
 - Targeted Node 20 in the Pages workflow for consistency.
 - Documented legacy access paths without adding new UI links.
+- Kept the rooms page accessible only via /#/rooms (no menu item) to preserve the 3-room menu requirement.
 
 Next:

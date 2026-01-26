@@ -4,10 +4,12 @@ A Vite + React + Tailwind shell that hosts three fullscreen rooms: Sun Clock, Se
 
 ## Routes
 
-- Home: `/#/`
+- Rooms (home): `/#/rooms`
 - Sun Clock: `/#/sun`
 - Seasonal Abstracts: `/#/seasonal`
 - Christmas Countdown: `/#/christmas`
+
+Visiting `/#/` will redirect to `/#/sun`.
 
 ## Legacy pages
 
