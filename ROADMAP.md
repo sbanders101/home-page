@@ -14,7 +14,7 @@ How to work:
   - Visiting `/#/` should redirect to `/#/sun`
   - Home page remains accessible (e.g., `/#/home` or another explicit route)
 
-- [ ] Fix Seasonal Abstracts early-January color interpolation bug
+- [x] Fix Seasonal Abstracts early-January color interpolation bug
   - Smoothly continue from Dec 31 into early January
   - Avoid abrupt green/yellow jumps in early January
 

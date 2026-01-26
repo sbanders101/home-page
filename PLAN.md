@@ -1,8 +1,8 @@
-Goal: Add a simple favicon.
+Goal: Fix Seasonal Abstracts early-January color interpolation bug.
 
 Plan (3–7 steps):
-1) Create a small SVG favicon in public/.
-2) Reference the favicon in the Vite entry HTML.
+1) Adjust seasonal interpolation to handle days before the first anchor.
+2) Ensure early January wraps from late autumn into winter smoothly.
 3) Log progress/decisions and update the roadmap.
 
 Progress (append bullets):
@@ -35,6 +35,7 @@ Progress (append bullets):
 - Redirected /#/ to /#/sun and moved the rooms grid to /#/rooms.
 - Updated back links and README to reflect the rooms route.
 - Added a simple SVG favicon and linked it in the app entry.
+- Fixed early-January interpolation by wrapping days before the first anchor.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -51,5 +52,6 @@ Decisions (append bullets):
 - Documented legacy access paths without adding new UI links.
 - Kept the rooms page accessible only via /#/rooms (no menu item) to preserve the 3-room menu requirement.
 - Used an SVG favicon for a lightweight, theme-consistent icon.
+- Adjusted day-of-year logic for Seasonal Abstracts only to preserve anchor list.
 
 Next:

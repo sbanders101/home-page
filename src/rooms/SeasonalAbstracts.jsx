@@ -41,17 +41,21 @@ const SEASONAL_ANCHORS = [
 
 const getSeasonalAttributes = (date) => {
   const doy = getDayOfYear(date);
+  const firstAnchorDay = SEASONAL_ANCHORS[0].dayOfYear;
+  const adjustedDoy = doy < firstAnchorDay ? doy + 365 : doy;
   let index = 0;
 
   for (let idx = 0; idx < SEASONAL_ANCHORS.length - 1; idx += 1) {
     if (
-      doy >= SEASONAL_ANCHORS[idx].dayOfYear &&
-      doy < SEASONAL_ANCHORS[idx + 1].dayOfYear
+      adjustedDoy >= SEASONAL_ANCHORS[idx].dayOfYear &&
+      adjustedDoy < SEASONAL_ANCHORS[idx + 1].dayOfYear
     ) {
       index = idx;
       break;
     }
-    if (doy >= SEASONAL_ANCHORS[SEASONAL_ANCHORS.length - 2].dayOfYear) {
+    if (
+      adjustedDoy >= SEASONAL_ANCHORS[SEASONAL_ANCHORS.length - 2].dayOfYear
+    ) {
       index = SEASONAL_ANCHORS.length - 2;
     }
   }
@@ -59,7 +63,8 @@ const getSeasonalAttributes = (date) => {
   const anchor1 = SEASONAL_ANCHORS[index];
   const anchor2 = SEASONAL_ANCHORS[index + 1];
   const fraction =
-    (doy - anchor1.dayOfYear) / (anchor2.dayOfYear - anchor1.dayOfYear);
+    (adjustedDoy - anchor1.dayOfYear) /
+    (anchor2.dayOfYear - anchor1.dayOfYear);
 
   const shapeCount = Math.round(
     interpolateValue(anchor1.shapeCount, anchor2.shapeCount, fraction)
