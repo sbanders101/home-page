@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICS → QuickBooks CSV Converter</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/rrule@2.8.1/dist/es5/rrule.min.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="card">
+        <p class="eyebrow">Browser-only invoice converter</p>
+        <h1>Google Calendar <code>.ics</code> → QuickBooks invoice CSV</h1>
+        <p class="subtitle">Drop a Google Calendar export file in here and generate invoice line-item CSV rows locally.</p>
+      </header>
+
+      <section class="card">
+        <div
+          id="drop-zone"
+          class="drop-zone"
+          tabindex="0"
+          role="button"
+          aria-label="Drop .ics file or click to upload"
+        >
+          <p><strong>Drop your <code>.ics</code> file here</strong></p>
+          <p>or click to choose a file</p>
+          <p id="drop-indicator" class="drop-indicator">No file selected</p>
+          <input
+            id="file-input"
+            type="file"
+            accept=".ics,.ifb,text/calendar"
+            aria-label="Upload calendar export file"
+          />
+        </div>
+
+        <form id="controls" class="controls" autocomplete="off">
+          <label>
+            Date from
+            <input id="date-from" type="date" />
+          </label>
+          <label>
+            Date to (inclusive)
+            <input id="date-to" type="date" />
+          </label>
+          <label>
+            Default hourly rate
+            <input id="hourly-rate" type="number" min="0" step="0.01" value="125" />
+          </label>
+          <label>
+            Default Product/Service
+            <input id="default-item" type="text" value="Tutoring" />
+          </label>
+          <label>
+            CSV output mode
+            <select id="output-mode">
+              <option value="combined" selected>Combined CSV</option>
+              <option value="per-customer">Per-customer CSV files</option>
+            </select>
+          </label>
+          <div class="button-row">
+            <button id="parse-btn" type="button">Parse + Preview</button>
+            <button id="export-btn" type="button" disabled>Export CSV</button>
+            <div id="download-links" class="download-links" aria-live="polite" hidden></div>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <h2>Preview by customer</h2>
+          <div class="preview-toolbar">
+            <button id="select-all-btn" type="button">Include all customers</button>
+            <button id="deselect-all-btn" type="button">Exclude all customers</button>
+          </div>
+        </div>
+        <div id="preview-container" class="preview-empty">Parse + Preview to generate grouped rows.</div>
+      </section>
+
+      <section class="card">
+        <div id="status" class="status">Upload a file and click <strong>Parse + Preview</strong>.</div>
+        <ul id="warnings" class="warning-list" aria-live="polite"></ul>
+      </section>
+
+      <footer class="card footer-note">
+        <strong>Privacy:</strong> Your file is read only in your browser. No calendar data is uploaded or stored.
+      </footer>
+    </main>
+  </body>
+</html>

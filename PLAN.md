@@ -1,10 +1,9 @@
-Goal: Add the D&D Dice room.
+Goal: Ignore legacy ICS2QBO source folder while keeping the published static copy.
 
 Plan (3–7 steps):
-1) Port the legacy DnD Dice canvas into an init/cleanup module.
-2) Create a React wrapper and full-bleed styles.
-3) Add the route to the router, menu, and rooms grid.
-4) Log progress/decisions and update the roadmap.
+1) Confirm current `.gitignore` entries and repo folder names.
+2) Add `ics2qbo/` to `.gitignore`.
+3) Append plan progress/decision notes.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -40,6 +39,10 @@ Progress (append bullets):
 - Snowflakes now start hidden and fade in when their fall animation begins.
 - Ported the D&D Dice canvas into an init/cleanup module and React wrapper.
 - Added the /#/dice route to the menu, rooms grid, and full-bleed layout list.
+- Started direct-link publishing task for ICS2CSV.
+- Copied `ics2qbo` static webapp files into `public/ics2csv`.
+- Kept app-shell navigation unchanged so ICS2CSV stays direct-link only.
+- Added `ics2qbo/` to `.gitignore` so the old source folder is ignored.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -59,5 +62,7 @@ Decisions (append bullets):
 - Adjusted day-of-year logic for Seasonal Abstracts only to preserve anchor list.
 - Used CSS variables for per-flake opacity to keep initial state hidden.
 - Kept the D&D Dice room canvas-based to match the legacy interaction model.
+- Published the utility app as plain static files under `public/ics2csv` instead of adding a hash route.
+- Treating `public/ics2csv` as the deployable artifact; source folder can be ignored when not needed for ongoing edits.
 
 Next:

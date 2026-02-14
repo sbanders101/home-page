@@ -25,6 +25,10 @@ How to work:
   - Port `public/legacy/dnd_dice.html` into a full-bleed route
   - Add to the glyph menu and home grid
 
+- [x] Publish ICS2CSV as a direct-link utility page
+  - Serve it at `/ics2csv/` from static assets
+  - Do not add it to the glyph menu or rooms grid
+
 ## History
 ### Phase 1: Safe foundation
 - [x] Create `public/legacy/` and copy the current v1 pages into it (do not delete originals yet)
