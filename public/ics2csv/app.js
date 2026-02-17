@@ -314,9 +314,33 @@ function renderPreview(groups) {
     const defaultRateText = document.createElement('span');
     defaultRateText.textContent = 'Rate';
 
+    const invoiceDateLabel = document.createElement('label');
+    invoiceDateLabel.className = 'compact-control summary-control';
+    const invoiceDateInput = document.createElement('input');
+    invoiceDateInput.type = 'date';
+    invoiceDateInput.value = normalizeDateOnly(group.invoiceDate);
+    const invoiceDateText = document.createElement('span');
+    invoiceDateText.textContent = 'Invoice Date';
+
+    const termsLabel = document.createElement('label');
+    termsLabel.className = 'compact-control summary-control';
+    const termsSelect = document.createElement('select');
+    const net30Option = document.createElement('option');
+    net30Option.value = 'Net 30';
+    net30Option.textContent = 'Net 30';
+    const net15Option = document.createElement('option');
+    net15Option.value = 'Net 15';
+    net15Option.textContent = 'Net 15';
+    termsSelect.append(net30Option, net15Option);
+    termsSelect.value = normalizeTerms(group.terms);
+    const termsText = document.createElement('span');
+    termsText.textContent = 'Terms';
+
     defaultItemLabel.append(defaultItemText, itemInput);
     defaultRateLabel.append(defaultRateText, rateInput);
-    summaryRight.append(defaultItemLabel, defaultRateLabel);
+    invoiceDateLabel.append(invoiceDateText, invoiceDateInput);
+    termsLabel.append(termsText, termsSelect);
+    summaryRight.append(defaultItemLabel, defaultRateLabel, invoiceDateLabel, termsLabel);
 
     summary.append(chevron, summaryLeft, summaryRight);
     details.appendChild(summary);
@@ -426,6 +450,18 @@ function renderPreview(groups) {
       rateInput.value = String(group.rate);
       updateRowAmounts();
       updateCustomerTotals();
+      setExportEnabled();
+    });
+
+    invoiceDateInput.addEventListener('change', () => {
+      group.invoiceDate = normalizeDateOnly(invoiceDateInput.value);
+      invoiceDateInput.value = group.invoiceDate;
+      setExportEnabled();
+    });
+
+    termsSelect.addEventListener('change', () => {
+      group.terms = normalizeTerms(termsSelect.value);
+      termsSelect.value = group.terms;
       setExportEnabled();
     });
 
@@ -812,6 +848,8 @@ function getOrCreateCustomerGroup(customerMap, groups, name, options) {
       enabled: true,
       item: options.defaultItem,
       rate: options.hourlyRate,
+      invoiceDate: getTodayDateOnly(),
+      terms: 'Net 30',
       rows: [],
     };
     customerMap.set(name, group);
@@ -1170,6 +1208,43 @@ function formatDateOnly(date) {
   return `${y}-${m}-${d}`;
 }
 
+function getTodayDateOnly() {
+  return formatDateOnly(new Date());
+}
+
+function parseDateOnly(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim())) {
+    return null;
+  }
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
+}
+
+function normalizeDateOnly(value) {
+  const parsed = parseDateOnly(value);
+  return parsed ? formatDateOnly(parsed) : getTodayDateOnly();
+}
+
+function normalizeTerms(value) {
+  return value === 'Net 15' ? 'Net 15' : 'Net 30';
+}
+
+function getTermsDays(terms) {
+  return normalizeTerms(terms) === 'Net 15' ? 15 : 30;
+}
+
+function getDueDate(invoiceDate, terms) {
+  const safeInvoiceDate = normalizeDateOnly(invoiceDate);
+  const parsed = parseDateOnly(safeInvoiceDate);
+  if (!parsed) {
+    return getTodayDateOnly();
+  }
+  return formatDateOnly(addDays(parsed, getTermsDays(terms)));
+}
+
 function clampToTwoDecimals(value) {
   if (!Number.isFinite(value)) {
     return 0;
@@ -1232,19 +1307,33 @@ function buildDescription(event) {
 }
 
 function buildCsvContent(lines) {
-  const headers = ['Date', 'Customer', 'Product/Service', 'Description', 'Amount', 'Qty', 'Rate'];
+  const headers = [
+    'InvoiceNo',
+    'Customer',
+    'InvoiceDate',
+    'DueDate',
+    'Terms',
+    'Item(Product/Service)',
+    'ItemQty',
+    'ItemRate',
+    'ItemAmount',
+    'ServiceDate',
+  ];
   const rows = [headers.join(',')];
 
   for (const line of lines) {
     rows.push(
       [
-        csvCell(line.date),
+        csvCell(line.invoiceNo),
         csvCell(line.customer),
+        csvCell(line.invoiceDate),
+        csvCell(line.dueDate),
+        csvCell(line.terms),
         csvCell(line.item),
-        csvCell(line.description),
-        csvCell(line.amount.toFixed(2)),
-        csvCell(clampToTwoDecimals(line.durationHours)),
-        csvCell(line.rate.toFixed(2)),
+        csvCell(clampToTwoDecimals(line.itemQty).toFixed(2)),
+        csvCell(clampMoney(line.itemRate).toFixed(2)),
+        csvCell(clampMoney(line.itemAmount).toFixed(2)),
+        csvCell(line.serviceDate),
       ].join(',')
     );
   }
@@ -1326,6 +1415,7 @@ function exportCsv() {
 
 function getExportLines() {
   const lines = [];
+  let invoiceNo = 1001;
 
   for (const customer of state.customerGroups) {
     if (!customer.enabled) {
@@ -1333,25 +1423,34 @@ function getExportLines() {
     }
 
     const rows = [...customer.rows].sort((a, b) => a.sortKey - b.sortKey);
+    const selectedRows = rows.filter((row) => row.selected);
+    if (!selectedRows.length) {
+      continue;
+    }
+
     const item = customer.item || 'Tutoring';
     const safeRate = Number(customer.rate);
+    const rate = Number.isFinite(safeRate) && safeRate >= 0 ? safeRate : 0;
+    const invoiceDate = normalizeDateOnly(customer.invoiceDate);
+    const terms = normalizeTerms(customer.terms);
+    const dueDate = getDueDate(invoiceDate, terms);
 
-    for (const row of rows) {
-      if (!row.selected) {
-        continue;
-      }
-
-      const rate = Number.isFinite(safeRate) && safeRate >= 0 ? safeRate : 0;
+    for (const row of selectedRows) {
       lines.push({
-        date: row.date,
+        invoiceNo,
         customer: customer.name,
+        invoiceDate,
+        dueDate,
+        terms,
         item,
-        description: row.description,
-        amount: clampMoney(row.durationHours * rate),
-        durationHours: row.durationHours,
-        rate: clampMoney(rate),
+        itemQty: row.durationHours,
+        itemRate: clampMoney(rate),
+        itemAmount: clampMoney(row.durationHours * rate),
+        serviceDate: row.date,
       });
     }
+
+    invoiceNo += 1;
   }
 
   return lines;

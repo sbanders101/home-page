@@ -29,6 +29,14 @@ How to work:
   - Serve it at `/ics2csv/` from static assets
   - Do not add it to the glyph menu or rooms grid
 
+- [x] Update ICS2CSV exports for invoice-style QuickBooks columns
+  - Add invoice defaults (InvoiceNo sequence, InvoiceDate, Terms, DueDate)
+  - Add per-customer invoice date + terms controls in preview
+
+- [x] Fix ICS2CSV direct access paths in dev and local-file workflows
+  - Redirect `/ics2csv/` to `/ics2csv/index.html` when the homepage shell is loaded
+  - Keep `ics2qbo` files synced with `public/ics2csv` for direct folder `index.html` usage
+
 ## History
 ### Phase 1: Safe foundation
 - [x] Create `public/legacy/` and copy the current v1 pages into it (do not delete originals yet)

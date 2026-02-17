@@ -1,9 +1,9 @@
-Goal: Ignore legacy ICS2QBO source folder while keeping the published static copy.
+Goal: Fix ICS2CSV entry points so dev URL and direct folder launch both use the updated app.
 
 Plan (3–7 steps):
-1) Confirm current `.gitignore` entries and repo folder names.
-2) Add `ics2qbo/` to `.gitignore`.
-3) Append plan progress/decision notes.
+1) Update homepage entry behavior so `/ics2csv/` resolves to the static ICS app in dev.
+2) Sync updated ICS app files from `public/ics2csv` into `ics2qbo` for direct `index.html` opening.
+3) Append progress/decision notes and mark the roadmap checkbox complete.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -42,7 +42,13 @@ Progress (append bullets):
 - Started direct-link publishing task for ICS2CSV.
 - Copied `ics2qbo` static webapp files into `public/ics2csv`.
 - Kept app-shell navigation unchanged so ICS2CSV stays direct-link only.
-- Added `ics2qbo/` to `.gitignore` so the old source folder is ignored.
+- Started ICS2CSV export/preview enhancement task.
+- Updated ICS2CSV preview headers with per-customer Invoice Date and Terms controls.
+- Updated CSV export columns to invoice-centric fields including DueDate and ServiceDate.
+- Added invoice numbering starting at 1001 and incrementing once per exported customer.
+- Started ICS2CSV entry-point fix after confirming `/ics2csv/` currently falls through to the homepage app.
+- Added a path guard in the homepage entry HTML to redirect `/ics2csv/` requests to `/ics2csv/index.html`.
+- Synced updated `public/ics2csv/app.js` and `public/ics2csv/styles.css` into `ics2qbo` for direct-file usage.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -63,6 +69,9 @@ Decisions (append bullets):
 - Used CSS variables for per-flake opacity to keep initial state hidden.
 - Kept the D&D Dice room canvas-based to match the legacy interaction model.
 - Published the utility app as plain static files under `public/ics2csv` instead of adding a hash route.
-- Treating `public/ics2csv` as the deployable artifact; source folder can be ignored when not needed for ongoing edits.
+- ICS2CSV changes should be made in `public/ics2csv` because that path is what the homepage serves directly.
+- Invoice-level fields (number/date/terms/due date) are customer-scoped and reused for each selected service row under that customer.
+- Keep `public/ics2csv` and `ics2qbo` synchronized when local file-based usage is still needed.
+- For Vite dev fallback behavior, a small pre-bootstrap redirect in root `index.html` is the minimal fix to make `/ics2csv/` land on the utility app.
 
 Next:

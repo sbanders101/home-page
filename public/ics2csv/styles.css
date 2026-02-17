@@ -455,6 +455,13 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.compact-control select {
+  width: 120px;
+  min-width: 95px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+}
+
 .customer-events {
   margin-top: 6px;
   display: grid;

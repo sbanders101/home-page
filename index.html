@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Personal Homepage V2</title>
+    <script>
+      (function redirectUtilityPath() {
+        var path = window.location.pathname;
+        if (/\/ics2csv\/?$/.test(path) && !/\/ics2csv\/index\.html$/.test(path)) {
+          var target = path.replace(/\/?$/, '/index.html');
+          window.location.replace(target + window.location.search);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
