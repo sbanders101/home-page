@@ -186,7 +186,8 @@ function parseAndPreview() {
   reader.onload = () => {
     try {
       const text = String(reader.result || '');
-      const parsed = parseIcs(text);
+      const parserCore = getParserCore();
+      const parsed = parserCore.parseIcs(text);
       if (parsed.errors.length > 0) {
         setStatus('Parse failed. Fix the calendar export and try again.');
         addWarnings(['Error: Could not read calendar content.'].concat(parsed.errors));
@@ -196,7 +197,7 @@ function parseAndPreview() {
         return;
       }
 
-      const conversion = convertEventsToLines(parsed, optionsResult);
+      const conversion = parserCore.convertEventsToLines(parsed, optionsResult);
 
       state.customerGroups = conversion.customerGroups;
       state.stats.rawEvents = parsed.events.length;
@@ -239,6 +240,18 @@ function parseAndPreview() {
   };
 
   reader.readAsText(file);
+}
+
+function getParserCore() {
+  if (
+    window.IcsCore &&
+    typeof window.IcsCore.parseIcs === 'function' &&
+    typeof window.IcsCore.convertEventsToLines === 'function'
+  ) {
+    return window.IcsCore;
+  }
+
+  return { parseIcs, convertEventsToLines };
 }
 
 function renderPreview(groups) {
@@ -554,6 +567,7 @@ function unfoldIcsLines(rawText) {
 function parseEvent(lines) {
   const event = {
     uid: '',
+    uidCanonical: '',
     summary: '',
     description: '',
     location: '',
@@ -562,6 +576,10 @@ function parseEvent(lines) {
     durationMs: null,
     rrule: '',
     exdates: [],
+    recurrenceId: null,
+    recurrenceIdKey: '',
+    recurrenceDayKey: '',
+    status: 'CONFIRMED',
     invalid: false,
     allDay: false,
   };
@@ -578,6 +596,7 @@ function parseEvent(lines) {
     switch (name) {
       case 'UID':
         event.uid = value;
+        event.uidCanonical = normalizeUid(value);
         break;
       case 'SUMMARY':
         event.summary = value;
@@ -603,6 +622,16 @@ function parseEvent(lines) {
         break;
       case 'EXDATE':
         parseExdate(value, event.exdates, property.params);
+        break;
+      case 'RECURRENCE-ID': {
+        const recurrence = parseIcsDate(value, property.params);
+        event.recurrenceId = recurrence ? recurrence.date.getTime() : null;
+        event.recurrenceIdKey = parseRecurrenceTokenKey(value) || (recurrence ? formatDateTimeKeyLocal(recurrence.date) : '');
+        event.recurrenceDayKey = event.recurrenceIdKey ? event.recurrenceIdKey.slice(0, 8) : '';
+        break;
+      }
+      case 'STATUS':
+        event.status = value.trim().toUpperCase();
         break;
       default:
         break;
@@ -733,9 +762,15 @@ function parseExdate(value, out, params = {}) {
 
   const valueParts = value.split(',');
   for (const part of valueParts) {
-    const parsed = parseIcsDate(part.trim(), params);
+    const trimmed = part.trim();
+    const parsed = parseIcsDate(trimmed, params);
     if (parsed) {
-      out.push(parsed.date.getTime());
+      const key = parseRecurrenceTokenKey(trimmed) || formatDateTimeKeyLocal(parsed.date);
+      out.push({
+        ms: parsed.date.getTime(),
+        key,
+        dayKey: key ? key.slice(0, 8) : '',
+      });
     }
   }
 }
@@ -782,6 +817,7 @@ function convertEventsToLines(parsed, options) {
   const warnings = [...parsed.warnings];
   const customerGroups = [];
   const customerMap = new Map();
+  const recurrenceOverridesByUid = buildRecurrenceOverridesByUid(parsed.events);
   let expandedRows = 0;
   const noDurationCustomers = new Set();
 
@@ -791,12 +827,16 @@ function convertEventsToLines(parsed, options) {
   }
 
   for (const event of parsed.events) {
+    if (event.status === 'CANCELLED') {
+      continue;
+    }
+
     if (event.invalid) {
       warnings.push(`Skipping event missing DTSTART: ${event.summary || event.uid || 'Unknown'}.`);
       continue;
     }
 
-    const occurrences = getEventOccurrences(event, range, warnings);
+    const occurrences = getEventOccurrences(event, range, warnings, recurrenceOverridesByUid);
     if (!occurrences.length) {
       continue;
     }
@@ -839,6 +879,24 @@ function convertEventsToLines(parsed, options) {
     warnings,
     rangeLabel: `${range.labelFrom} to ${range.labelTo}`,
   };
+}
+
+function buildRecurrenceOverridesByUid(events) {
+  const map = new Map();
+
+  for (const event of events) {
+    if (!event.uidCanonical || event.recurrenceId == null) {
+      continue;
+    }
+
+    if (!map.has(event.uidCanonical)) {
+      map.set(event.uidCanonical, []);
+    }
+
+    map.get(event.uidCanonical).push(event);
+  }
+
+  return map;
 }
 
 function getOrCreateCustomerGroup(customerMap, groups, name, options) {
@@ -890,7 +948,7 @@ function resolveRange(dateFrom, dateTo) {
   };
 }
 
-function getEventOccurrences(event, range, warnings) {
+function getEventOccurrences(event, range, warnings, recurrenceOverridesByUid = new Map()) {
   if (!event.rrule) {
     return event.start && isWithinRange(event.start.date, range) ? [event.start.date] : [];
   }
@@ -919,10 +977,101 @@ function getEventOccurrences(event, range, warnings) {
     }
   }
 
-  const exclusions = new Set((event.exdates || []).map((ms) => new Date(ms).getTime()));
+  const exclusionTimes = new Set();
+  const exclusionKeys = new Set();
+  const exclusionDayKeys = new Set();
+  for (const exdate of event.exdates || []) {
+    if (typeof exdate === 'number') {
+      exclusionTimes.add(new Date(exdate).getTime());
+      continue;
+    }
+
+    if (!exdate || typeof exdate !== 'object') {
+      continue;
+    }
+
+    if (Number.isFinite(exdate.ms)) {
+      exclusionTimes.add(new Date(exdate.ms).getTime());
+    }
+    if (exdate.key) {
+      exclusionKeys.add(exdate.key);
+    }
+    if (exdate.dayKey) {
+      exclusionDayKeys.add(exdate.dayKey);
+    }
+  }
+  const overriddenRecurrenceIds = new Set();
+  const overriddenRecurrenceKeys = new Set();
+  const overriddenRecurrenceDayKeys = new Set();
+  if (event.uidCanonical && recurrenceOverridesByUid.has(event.uidCanonical)) {
+    for (const override of recurrenceOverridesByUid.get(event.uidCanonical)) {
+      if (override.recurrenceId != null) {
+        overriddenRecurrenceIds.add(override.recurrenceId);
+      }
+      if (override.recurrenceIdKey) {
+        overriddenRecurrenceKeys.add(override.recurrenceIdKey);
+      }
+      if (override.recurrenceDayKey) {
+        overriddenRecurrenceDayKeys.add(override.recurrenceDayKey);
+      }
+    }
+  }
 
   return occurrences
-    .filter((date) => !exclusions.has(date.getTime()))
+    .filter((date) => {
+      if (overriddenRecurrenceIds.has(date.getTime())) {
+        return false;
+      }
+
+      const localKey = formatDateTimeKeyLocal(date);
+      if (overriddenRecurrenceKeys.has(localKey)) {
+        return false;
+      }
+
+      const utcKey = formatDateTimeKeyUtc(date);
+      if (overriddenRecurrenceKeys.has(utcKey)) {
+        return false;
+      }
+
+      const localDay = localKey.slice(0, 8);
+      if (overriddenRecurrenceDayKeys.has(localDay)) {
+        return false;
+      }
+
+      const utcDay = utcKey.slice(0, 8);
+      if (overriddenRecurrenceDayKeys.has(utcDay)) {
+        return false;
+      }
+
+      return true;
+    })
+    .filter((date) => {
+      if (exclusionTimes.has(date.getTime())) {
+        return false;
+      }
+
+      const localKey = formatDateTimeKeyLocal(date);
+      if (exclusionKeys.has(localKey)) {
+        return false;
+      }
+
+      const utcKey = formatDateTimeKeyUtc(date);
+      if (exclusionKeys.has(utcKey)) {
+        return false;
+      }
+
+      const localDay = localKey.slice(0, 8);
+      if (exclusionDayKeys.has(localDay)) {
+        return false;
+      }
+
+      const utcDay = utcKey.slice(0, 8);
+      if (exclusionDayKeys.has(utcDay)) {
+        return false;
+      }
+
+      return true;
+    })
     .filter((date) => isWithinRange(date, range))
     .filter((date) => {
       const ts = date.getTime();
@@ -979,16 +1128,17 @@ function expandWithFallback(ruleText, dtStart, range) {
 
   const occurrences = [];
   const cap = 500000;
+  const limit = Math.min(count, cap);
 
   if (freq === 'DAILY') {
     let current = new Date(dtStart.getTime());
     let generated = 0;
-    while (current <= rangeEnd && generated < Math.min(count, cap)) {
+    while (current <= rangeEnd && generated < limit) {
+      generated += 1;
       if (current >= range.start && current <= rangeEnd) {
         occurrences.push(new Date(current.getTime()));
       }
       current = addDays(current, interval);
-      generated += 1;
     }
     return occurrences;
   }
@@ -998,12 +1148,12 @@ function expandWithFallback(ruleText, dtStart, range) {
     if (!weekdays.length) {
       let current = new Date(dtStart.getTime());
       let generated = 0;
-      while (current <= rangeEnd && generated < Math.min(count, cap)) {
+      while (current <= rangeEnd && generated < limit) {
+        generated += 1;
         if (current >= range.start && current <= rangeEnd) {
           occurrences.push(new Date(current.getTime()));
         }
         current = addWeeks(current, interval);
-        generated += 1;
       }
       return occurrences;
     }
@@ -1021,17 +1171,23 @@ function expandWithFallback(ruleText, dtStart, range) {
     );
 
     let generated = 0;
-    while (currentWeekStart <= rangeEnd && generated < Math.min(count, cap)) {
+    while (currentWeekStart <= rangeEnd && generated < limit) {
       for (const wd of weekdays) {
         const candidate = moveToWeekday(currentWeekStart, wd);
         candidate.setHours(dtStart.getHours(), dtStart.getMinutes(), dtStart.getSeconds(), dtStart.getMilliseconds());
 
-        if (candidate >= dtStart && candidate <= rangeEnd && candidate >= range.start && candidate <= range.end) {
+        if (candidate < dtStart || candidate > rangeEnd) {
+          continue;
+        }
+
+        generated += 1;
+
+        if (candidate >= range.start && candidate <= range.end) {
           occurrences.push(new Date(candidate.getTime()));
-          generated += 1;
-          if (generated >= Math.min(count, cap)) {
-            break;
-          }
+        }
+
+        if (generated >= limit) {
+          break;
         }
       }
       currentWeekStart = addWeeks(currentWeekStart, interval);
@@ -1043,12 +1199,12 @@ function expandWithFallback(ruleText, dtStart, range) {
   if (freq === 'MONTHLY') {
     let current = new Date(dtStart.getTime());
     let generated = 0;
-    while (current <= rangeEnd && generated < Math.min(count, cap)) {
+    while (current <= rangeEnd && generated < limit) {
+      generated += 1;
       if (current >= range.start && current <= rangeEnd) {
         occurrences.push(new Date(current.getTime()));
       }
       current = addMonths(current, interval);
-      generated += 1;
     }
     return occurrences;
   }
@@ -1056,12 +1212,12 @@ function expandWithFallback(ruleText, dtStart, range) {
   if (freq === 'YEARLY') {
     let current = new Date(dtStart.getTime());
     let generated = 0;
-    while (current <= rangeEnd && generated < Math.min(count, cap)) {
+    while (current <= rangeEnd && generated < limit) {
+      generated += 1;
       if (current >= range.start && current <= rangeEnd) {
         occurrences.push(new Date(current.getTime()));
       }
       current = addYears(current, interval);
-      generated += 1;
     }
     return occurrences;
   }
@@ -1091,6 +1247,58 @@ function parseSimpleRRule(ruleText) {
   }
 
   return result;
+}
+
+function normalizeUid(uid) {
+  const trimmed = String(uid || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const match = trimmed.match(/^(.*)_R\d{8}T\d{6}Z?(@.*)?$/);
+  if (!match) {
+    return trimmed;
+  }
+
+  return `${match[1]}${match[2] || ''}`;
+}
+
+function parseRecurrenceTokenKey(value) {
+  const normalized = String(value || '').trim();
+  const match = normalized.match(/^(\d{8})T(\d{4,6})Z?$/);
+  if (!match) {
+    return '';
+  }
+
+  const rawTime = match[2];
+  const hh = rawTime.substring(0, 2);
+  const mm = rawTime.substring(2, 4);
+  const ss = rawTime.length >= 6 ? rawTime.substring(4, 6) : '00';
+  return `${match[1]}T${hh}${mm}${ss}`;
+}
+
+function formatDateTimeKeyLocal(date) {
+  const pad = (number) => String(number).padStart(2, '0');
+  return (
+    `${date.getFullYear()}` +
+    `${pad(date.getMonth() + 1)}` +
+    `${pad(date.getDate())}` +
+    `T${pad(date.getHours())}` +
+    `${pad(date.getMinutes())}` +
+    `${pad(date.getSeconds())}`
+  );
+}
+
+function formatDateTimeKeyUtc(date) {
+  const pad = (number) => String(number).padStart(2, '0');
+  return (
+    `${date.getUTCFullYear()}` +
+    `${pad(date.getUTCMonth() + 1)}` +
+    `${pad(date.getUTCDate())}` +
+    `T${pad(date.getUTCHours())}` +
+    `${pad(date.getUTCMinutes())}` +
+    `${pad(date.getUTCSeconds())}`
+  );
 }
 
 function formatSimpleUntilDate(value) {

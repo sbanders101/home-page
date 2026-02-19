@@ -2,3 +2,8 @@ node_modules/
 dist/
 .DS_Store
 ics2qbo/
+import/
+AGENTS.md
+CODEX_BRIEF.md
+PLAN.md
+ROADMAP.md

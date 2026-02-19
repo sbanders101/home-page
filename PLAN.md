@@ -1,9 +1,9 @@
-Goal: Fix ICS2CSV entry points so dev URL and direct folder launch both use the updated app.
+Goal: Replace the website-linked ICS2CSV app with the new version from `import/ics2csv`.
 
 Plan (3–7 steps):
-1) Update homepage entry behavior so `/ics2csv/` resolves to the static ICS app in dev.
-2) Sync updated ICS app files from `public/ics2csv` into `ics2qbo` for direct `index.html` opening.
-3) Append progress/decision notes and mark the roadmap checkbox complete.
+1) Inspect `import/ics2csv` file structure and confirm required runtime assets.
+2) Copy the new app files into `public/ics2csv` (the website-linked path).
+3) Append progress/decisions and mark the roadmap checkbox complete.
 
 Progress (append bullets):
 - Created public/legacy and copied v1 HTML files with required names.
@@ -49,6 +49,8 @@ Progress (append bullets):
 - Started ICS2CSV entry-point fix after confirming `/ics2csv/` currently falls through to the homepage app.
 - Added a path guard in the homepage entry HTML to redirect `/ics2csv/` requests to `/ics2csv/index.html`.
 - Synced updated `public/ics2csv/app.js` and `public/ics2csv/styles.css` into `ics2qbo` for direct-file usage.
+- Located new app source under `import/ics2csv` and confirmed it includes `ics-core.js` in addition to `index.html`, `styles.css`, and `app.js`.
+- Replaced website-linked app files in `public/ics2csv` with the imported version files.
 
 Decisions (append bullets):
 - Used a minimal custom hash router to avoid adding react-router for now.
@@ -73,5 +75,6 @@ Decisions (append bullets):
 - Invoice-level fields (number/date/terms/due date) are customer-scoped and reused for each selected service row under that customer.
 - Keep `public/ics2csv` and `ics2qbo` synchronized when local file-based usage is still needed.
 - For Vite dev fallback behavior, a small pre-bootstrap redirect in root `index.html` is the minimal fix to make `/ics2csv/` land on the utility app.
+- Treat `public/ics2csv` as the canonical served target when replacing with newer external app drops.
 
 Next:

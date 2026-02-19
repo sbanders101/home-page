@@ -37,6 +37,10 @@ How to work:
   - Redirect `/ics2csv/` to `/ics2csv/index.html` when the homepage shell is loaded
   - Keep `ics2qbo` files synced with `public/ics2csv` for direct folder `index.html` usage
 
+- [x] Update website-linked ICS2CSV with the new import version
+  - Replace `public/ics2csv` app files from `import/ics2csv`
+  - Include any new runtime assets required by the imported version (e.g., `ics-core.js`)
+
 ## History
 ### Phase 1: Safe foundation
 - [x] Create `public/legacy/` and copy the current v1 pages into it (do not delete originals yet)
